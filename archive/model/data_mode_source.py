@@ -8,9 +8,10 @@
 from enum import Enum
 
 
-class DataModeSource(Enum):
+class SourceDataMode(Enum):
     ALL = "1"
     ADD = "2"
+
     def __init__(self,name, value ):
         self.name = name
         self.value = value

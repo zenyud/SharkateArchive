@@ -5,48 +5,40 @@
 # Function Desc : 参数初始化
 # History       : 2018/12/21  ZENGYU     Create
 # Remarks       :
-from archive.model.data_mode_source import DataModeSource
-from data_file_archive_constance import DataFileArchiveConstance
-from utils.date_util import DateUtil
-from utils.str_utils import StringUtil
+import argparse
+import getopt
+
+import sys
+
 from utils.biz_excpetion import BizExcption
 
-
-def init_check(paras):
-    """
-    :param paras: Map<String,String> 参数字典
-    :return:
-
-    """
-    log_user = paras.get(DataFileArchiveConstance.LOGIN_USER)
-
-    sys_name = get_arg(paras, DataFileArchiveConstance.SYS_NAME )
-    obj_name = get_arg(paras,DataFileArchiveConstance.OBJ_NAME )
-    obj_id = str(paras.get(DataFileArchiveConstance.OBJ_ID))
-    table_name = get_arg(paras, DataFileArchiveConstance.TABLE_NAME)
-    org = get_arg(paras, DataFileArchiveConstance.ORG)
-    data_date = get_arg(paras, DataFileArchiveConstance.DATA_DATE)
-    # 获取前一天的时间
-    yes_date = DateUtil.get_day_of_day(data_date,-1)
-    hive_db = str(paras.get(DataFileArchiveConstance.HIVE_DB))
-    if StringUtil.is_blank(hive_db):
-        hive_db = sys_name
-
-    dataModeSource = paras.get(DataFileArchiveConstance.DATA_MODE_SOURCE)
+init_title = ["org", "sourceDataMode", "sourceDbName", "sourceTableName",
+              "schemaIDdbName", "tableName",
+              "savaMode", "dataDate", "dateRange", "orgPos",
+              "clusterCol", "bucketsNum"]
 
 
+def init():
+    # 参数解析
+    parser = argparse.ArgumentParser(description="数据归档组件")
 
-
-
-def get_arg(paras, key):
-    """
-    :param paras: 参数Map
-    :param key: 参数名
-    :return: 参数值
-    """
-    value =str(paras.get(key))
-    if StringUtil.is_blank(value):
-        raise BizExcption("缺少参数{0}".format(key))
-    return value.strip().upper()
+    parser.add_argument("-obj", required=True, help="数据对象名")
+    parser.add_argument("-org",required=True, help="机构")
+    parser.add_argument("-sourceDataMode", required=True, help="机构")
+    parser.add_argument("-sourceDbName", required=True, help="机构")
+    parser.add_argument("-sourceTableName", required=True, help="机构")
+    parser.add_argument("-filterSql", required=True, help="机构")
+    parser.add_argument("-filterCol", required=True, help="机构")
+    parser.add_argument("-schemaID", required=True, help="机构")
+    parser.add_argument("-dbName", required=True, help="机构")
+    parser.add_argument("-tableName", required=True, help="机构")
+    parser.add_argument("-savaMode", required=True, help="机构")
+    parser.add_argument("-dataDate", required=True, help="机构")
+    parser.add_argument("-dateRange", required=True, help="机构")
+    parser.add_argument("-orgPos", required=True, help="机构")
+    parser.add_argument("-clusterCol", required=True, help="机构")
+    parser.add_argument("-bucketsNum", required=True, help="机构")
+    parser.add_argument("-allTableName", required=True, help="机构")
+    parser.add_argument("-addTableName", required=True, help="机构")
 
 
