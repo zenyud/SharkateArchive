@@ -21,11 +21,12 @@ class Logger(logging.Logger):
 
         # 根据环境变量DIDP_LOG_LEVEL判断是否输出DEBUG日志
         # DEBUG日志可用于调试,运行时不输出
-        debug_level = os.getenv("DIDP_LOG_LEVEL")
-        if debug_level == "DEBUG":
-            console_handler.setLevel(logging.DEBUG)
-        else:
-            console_handler.setLevel(logging.INFO)
+        # debug_level = os.getenv("DIDP_LOG_LEVEL")
+        # if debug_level == "DEBUG":
+        #     console_handler.setLevel(logging.DEBUG)
+        # else:
+        #     console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(logging.DEBUG)
 
         # 定义handler的输出格式
         formatter = logging.Formatter(fmt="[%(asctime)s][%(module)21s]"
@@ -35,3 +36,7 @@ class Logger(logging.Logger):
 
         # 给logger添加handler
         self.addHandler(console_handler)
+
+if __name__ == '__main__':
+    log = Logger()
+    log.debug("asdasd")
