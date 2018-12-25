@@ -6,6 +6,6 @@
 # History       : 2018/12/21  ZENGYU     Create
 # Remarks       :
 
-class BizExcption(Exception):
+class BizException(Exception):
     def __init__(self,*args):
         self.args = args

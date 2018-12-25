@@ -7,7 +7,10 @@
 # Remarks       :
 import re
 
+from archive.date_check import DateCheck
 from archive.init_archive import init
+from archive.archive_lock import ArchiveLock
+from archive.org_check import OrgCheck
 from utils.logger import Logger
 
 LOG = Logger()
@@ -61,10 +64,22 @@ class ArchiveData(object):
         :return:
          1 - 成功 0 - 失败
         """
+        # 任务加锁判断
+        ArchiveLock(self.__args.obj, self.__args.org).check()
 
+        # 日期分期检查
+        date_check = DateCheck(self.__args.dataDate, self.__args.dateRange,
+                               self.__args.dbName, self.__args.tableName)
+        date_check.date_partition_check()
+
+        # 机构字段检查
+        org_check = OrgCheck(self.__args.dbName, self.__args.tableName,
+                             self.__args.orgPos)
+        org_check.check()
 
 
 if __name__ == '__main__':
     # 初始化判断
     args = init()
-    ArchiveData(args)
+    archive = ArchiveData(args)
+    archive.run()

@@ -10,7 +10,7 @@ import getopt
 
 import sys
 
-from utils.biz_excpetion import BizExcption
+from utils.biz_excpetion import BizException
 
 init_title = ["org", "sourceDataMode", "sourceDbName", "sourceTableName",
               "schemaIDdbName", "tableName",
