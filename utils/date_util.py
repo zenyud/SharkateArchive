@@ -26,7 +26,10 @@ class DateUtil(object):
         else:
             result = a + timedelta(n)
         return result.strftime("%Y%m%d")
-
+    @staticmethod
+    def get_now_date():
+        dt = datetime.datetime.now()
+        return dt.strftime("%Y%m%d")
     def get_month_start(self, now_day):
         """
         :param now_day: 当日日期String
@@ -105,4 +108,4 @@ class DateUtil(object):
         return quarter
 
 if __name__ == '__main__':
-    print DateUtil().get_quarter("20181224")
+    print DateUtil().get_now_date()

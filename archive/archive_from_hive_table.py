@@ -9,7 +9,7 @@ import re
 
 from archive.date_check import DateCheck
 from archive.init_archive import init
-from archive.archive_lock import ArchiveLock
+from archive.archive_lock import ArchiveLock, MetaLock
 from archive.org_check import OrgCheck
 from utils.logger import Logger
 
@@ -65,18 +65,33 @@ class ArchiveData(object):
          1 - 成功 0 - 失败
         """
         # 任务加锁判断
+        LOG.info("判断是否有在进行的任务,并加锁 ")
         ArchiveLock(self.__args.obj, self.__args.org).check()
 
-        # 日期分期检查
+        LOG.info("日期分区字段检查 ")
         date_check = DateCheck(self.__args.dataDate, self.__args.dateRange,
                                self.__args.dbName, self.__args.tableName)
         date_check.date_partition_check()
 
         # 机构字段检查
+        LOG.info("机构字段字段检查 ")
         org_check = OrgCheck(self.__args.dbName, self.__args.tableName,
                              self.__args.orgPos)
         org_check.check()
 
+        LOG.info("元数据处理、表并发处理")
+        meta_lock = MetaLock(self.__args.obj,self.__args.org)
+        meta_lock.metalock()
+
+        LOG.info("元数据登记与更新")
+        LOG.info("元数据解锁")
+        LOG.info("源表与Hive表比较")
+        LOG.info("创建Hive表或修改Hive表结构")
+        LOG.info("源数据的数据量统计")
+        LOG.info("数据载入")
+        LOG.info("统计入库条数")
+        LOG.info("登记数据资产")
+        LOG.info("解除并发锁")
 
 if __name__ == '__main__':
     # 初始化判断

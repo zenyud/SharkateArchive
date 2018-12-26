@@ -5,9 +5,10 @@
 # Function Desc :  基础类模块
 # History       : 2018/12/24  ZENGYU     Create
 # Remarks       :
-from utils.base_connect import get_base
+
 from sqlalchemy import *
-Base = get_base()
+
+from utils.base_connect import Base
 
 
 class HdsStructArchiveCtrl(Base):
@@ -26,23 +27,118 @@ class HdsStructArchiveCtrl(Base):
 
 class DidpHdsStructArchiveCtrl(Base):
     """
-        映射HDS_STRUCT_ARCHIVE_CTRLS 表
+        DIDP_HDS_STRUCT_ARCHIVE_CTRL 表
     """
     __tablename__ = 'DIDP_HDS_STRUCT_ARCHIVE_CTRL'
+    # SYSTEM_NAME = Column(primary_key=True)
+    OBJECT_NAME = Column(String(10), primary_key=True)
+    # STATUS = Column()
+    # CREATE_USER = Column()
+    # CREATE_TIME = Column()
+    ORG_CODE = Column(String(20), primary_key=True)
+    # STORAGE_MODE = Column(primary_key=True)
+
+
+#
+#
+class DidpHdsStructMetaCtrl(Base):
+    """
+        DIDP_HDS_STRUCT_META_CTRL
+    """
+    __tablename__ = 'DIDP_HDS_STRUCT_META_CTRL'
     # SYSTEM_NAME = Column(primary_key=True)
     OBJECT_NAME = Column(primary_key=True)
     # STATUS = Column()
     # CREATE_USER = Column()
     # CREATE_TIME = Column()
     ORG_CODE = Column(primary_key=True)
-    # STORAGE_MODE = Column(primary_key=True)
 
+
+# #
+# #
 class DidpCommonParams(Base):
     __tablename__ = "DIDP_COMMON_PARAMS"
-    PARAM_ID = Column(primary_key=True,nullable=False)
+    PARAM_ID = Column(primary_key=True, nullable=False)
     LAST_UPDATE_TIME = Column(nullable=False)
     LAST_UPDATE_USER = Column(nullable=False)
     GROUP_NAME = Column(nullable=False)
     PARAM_NAME = Column(nullable=True)
     PARAM_VALUE = Column(nullable=True)
     DESCRIPTION = Column(nullable=True)
+
+
+class DidpMetaColumnInfo(Base):
+    __tablename__ = "DIDP_META_COLUMN_INFO"
+    COLUMN_ID = Column(primary_key=True, nullable=False)
+    TABLE_ID = Column(nullable=False)
+    PROJECT_VERSION_ID = Column(nullable=False)
+    LAST_UPDATE_TIME = Column(nullable=False)
+    LAST_UPDATE_USER = Column(nullable=False)
+    COL_SEQ = Column()
+    COL_NAME = Column()
+    COL_DESC = Column()
+    COL_TYPE = Column()
+    COL_LENGTH = Column(Integer)
+    COL_SCALE = Column()
+    COL_DEFAULT = Column()
+    NULL_FLAG = Column()  # 0 否 1 是
+    PK_FLAG = Column()  # 0 否 1 是
+    PARTITION_FLAG = Column()  # 0 否 1 是
+    BUCKET_FLAG = Column()  # 0 否 1 是
+    DESCRIPTION = Column()
+
+
+class DidpMetaColumnInfoHis(Base):
+    __tablename__ = "DIDP_META_COLUMN_INFO_HIS"
+    TABLE_HIS_ID = Column(nullable=False, primary_key=True)
+    COLUMN_ID = Column(nullable=False)
+    TABLE_ID = Column(nullable=False)
+    PROJECT_VERSION_ID = Column(nullable=False)
+    LAST_UPDATE_TIME = Column(nullable=False)
+    LAST_UPDATE_USER = Column(nullable=False)
+    COL_SEQ = Column()
+    COL_NAME = Column()
+    COL_DESC = Column()
+    COL_TYPE = Column()
+    COL_LENGTH = Column(Integer)
+    COL_SCALE = Column()
+    COL_DEFAULT = Column()
+    NULL_FLAG = Column()  # 0 否 1 是
+    PK_FLAG = Column()  # 0 否 1 是
+    PARTITION_FLAG = Column()  # 0 否 1 是
+    BUCKET_FLAG = Column()  # 0 否 1 是
+    DESCRIPTION = Column()
+
+
+class DidpMetaTableInfo(Base):
+    __tablename__ = "DIDP_META_TABLE_INFO"  # 表元数据信息表
+    TABLE_ID = Column(primary_key=True,
+                      nullable=False)
+    SCHEMA_ID = Column(nullable=False)
+    PROJECT_VERSION_ID = Column()
+    LAST_UPDATE_TIME = Column(nullable=False)
+    LAST_UPDATE_USER = Column(nullable=False)
+    TABLE_NAME = Column(nullable=False)
+    TABLE_NAME_CN = Column()
+    BUCKET_NUM = Column()
+    DESCRIPTION = Column()
+    RELEASE_DATE = Column(nullable=False)
+    TABLE_STATUS = Column()  # 1 暂存 2 发布
+
+
+#
+class DidpMetaTableInfoHis(Base):
+    __tablename__ = "DIDP_META_TABLE_INFO_HIS"  # 表元数据信息表
+    TABLE_HIS_ID = Column(primary_key=True,
+                          nullable=True)
+    TABLE_ID = Column(nullable=False)
+    SCHEMA_ID = Column(nullable=False)
+    PROJECT_VERSION_ID = Column()
+    LAST_UPDATE_TIME = Column(nullable=False)
+    LAST_UPDATE_USER = Column(nullable=False)
+    TABLE_NAME = Column(nullable=False)
+    TABLE_NAME_CN = Column()
+    BUCKET_NUM = Column()
+    DESCRIPTION = Column()
+    RELEASE_DATE = Column(nullable=False)
+    TABLE_STATUS = Column()  # 1 暂存 2 发布

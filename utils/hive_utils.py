@@ -43,6 +43,7 @@ class HiveUtil(object):
         db_oper.close()
 
         return len(result) == 1
+
     @staticmethod
     def has_partition(db_name, table_name):
         """
@@ -51,12 +52,7 @@ class HiveUtil(object):
         :param db_oper: 数据库操作对象
         :return: 是否存在分区
         """
-        sql1 = "use {dbName}".format(dbName=db_name)
-        sql = "desc formatted  {tableName}".format(tableName=table_name)
-        db_oper.connect()
-        db_oper.do(sql1)
-        result = db_oper.fetchall(sql)
-        db_oper.close()
+        result = HiveUtil.get_table_desc(db_name, table_name)
         # 在数据库中获取时间分区键的名称
         didp_params = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
@@ -72,6 +68,7 @@ class HiveUtil(object):
                 flag = True
                 break
         return flag
+
     @staticmethod
     def get_org_pos(db_name, table_name):
         """
@@ -80,12 +77,7 @@ class HiveUtil(object):
         :param table_name:
         :return:
         """
-        sql1 = "use {database}".format(database=db_name)
-        sql = "desc formatted {table}".format(table=table_name)
-        db_oper.connect()
-        db_oper.do(sql1)
-        result = db_oper.fetchall(sql)
-        db_oper.close()
+        result = HiveUtil.get_table_desc(db_name,table_name)
         # 在数据库中获取机构分区键的位置
         p_key = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
@@ -108,3 +100,25 @@ class HiveUtil(object):
                 break
 
         return key
+
+    @staticmethod
+    def get_table_descformatted(db_name, table_name):
+        sql1 = "use {database}".format(database=db_name)
+        sql = "desc formatted {table}".format(table=table_name)
+        db_oper.connect()
+        db_oper.do(sql1)
+        result = db_oper.fetchall(sql)
+        db_oper.close()
+        return result
+
+    @staticmethod
+    def get_table_desc(db_name,table_name):
+        sql1 = "use {database}".format(database=db_name)
+        sql = "desc {table}".format(table=table_name)
+        db_oper.connect()
+        db_oper.do(sql1)
+        result = db_oper.fetchall(sql)
+        db_oper.close()
+        return result
+if __name__ == '__main__':
+    print HiveUtil.get_table_descformatted("default","hds___aaa_batch_init_input")
