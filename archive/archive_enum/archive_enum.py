@@ -17,10 +17,17 @@ class DatePartitionRange(enum.Enum):
     QUARTER_YEAR = "Q"
     YEAR = "Y"
 
+class OrgPos(enum.Enum):
+
+    NONE = 1
+    COLUMN = 2
+    PARTITION = 3
+
+
 class PartitionKey(enum.Enum):
     DATE_SCOPE = "partition.key.date.scope"
     ORG = "partition.key.org"
-    GROUP = "archive.group"
+
 
 
 class DataArchiveConstance(enum.Enum):
@@ -78,5 +85,14 @@ class AddColumn(enum.Enum):
     # 拉链结束日期
     CHAIN_EDATE = "add.column.edate"
 
-    GROUP = "add.group"
     # TEMP_TAIL = "hds___tail"
+
+class CommentChange(enum.Enum):
+
+    TABLE_COMMENT_CHANGE_DDL = "table.comment.change.ddl"
+    # ddl字段备注改变是否需要增加新版本
+    FIELD_COMMENT_CHANGE_DDL = "field.comment.change.ddl"
+
+if __name__ == '__main__':
+    for x in AddColumn:
+        print x.value

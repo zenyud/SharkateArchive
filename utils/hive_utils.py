@@ -8,9 +8,12 @@
 import ConfigParser
 
 from archive.archive_enum.archive_enum import PartitionKey, AddColumn
+from archive.dao.common_param_dao import CommonParamsDao
 from archive.model.base_model import DidpCommonParams
+from archive.model.hive_field_info import HiveFieldInfo
 from utils.base_connect import get_session, get_root_path
 from utils.db_operator import DbOperator
+from utils.str_utils import StringUtil
 
 SESSION = get_session()
 root_path = get_root_path()
@@ -56,9 +59,9 @@ class HiveUtil(object):
         # 在数据库中获取时间分区键的名称
         didp_params = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
-            == PartitionKey.GROUP,
+            == PartitionKey.GROUP.value,
             DidpCommonParams.PARAM_NAME
-            == PartitionKey.DATE_SCOPE).all()
+            == PartitionKey.DATE_SCOPE.value).all()
 
         pri_key = didp_params.PARAM_VALUE
         # print  pri_key
@@ -81,22 +84,23 @@ class HiveUtil(object):
         # 在数据库中获取机构分区键的位置
         p_key = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
-            == PartitionKey.GROUP,
+            == PartitionKey.GROUP.value,
             DidpCommonParams.PARAM_NAME
-            == PartitionKey.ORG).all().PARAM_VALUE
+            == PartitionKey.ORG.value).all().PARAM_VALUE
         a_key = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
-            == AddColumn.GROUP,
+            == AddColumn.GROUP.value,
             DidpCommonParams.PARAM_NAME
-            == AddColumn.COL_ORG).all().PARAM_VALUE
-        key = ""
+            == AddColumn.COL_ORG.value).all().PARAM_VALUE
+        # 机构字段位置（1-没有机构字段 2-字段在列中 3-字段在分区中）
+        key = 1
         for col in result:
             if col[0].strip().upper().__eq__(p_key.upper()):
-                key = p_key
+                key = 3
                 break
 
             elif col[0].strip().upper().__eq__(a_key.upper()):
-                key = a_key
+                key = 2
                 break
 
         return key
@@ -120,5 +124,64 @@ class HiveUtil(object):
         result = db_oper.fetchall(sql)
         db_oper.close()
         return result
+
+    @staticmethod
+    def execute(sql):
+        db_oper.execute(sql)
+
+    @staticmethod
+    def get_common_dict():
+        return CommonParamsDao().get_all_common_code()
+
+    @staticmethod
+    def get_hive_meta_field(db_name, table_name, filter):
+        # type: (str, str, bool) -> list(HiveFieldInfo)
+        """
+            获取Hive的元数据信息
+        :param db_name:
+        :param table_name:
+        :param filter: 是否过滤添加字段
+        :return:  字段信息列表
+        """
+        result = HiveUtil.get_table_desc(db_name,table_name)
+        add_cols = set()
+        partition_cols = set()
+        if filter :
+            common_dict = HiveUtil.get_common_dict()
+            for add_col in AddColumn:
+                add_cols.add(common_dict.get(add_col.value).upper().strip())
+            for part_col in PartitionKey:
+                partition_cols.add(common_dict.get(part_col.value).upper().strip)
+        i = 0
+        hive_meta_info_list = list() # 字段信息列表
+        # 迭代字段
+        for x in result:
+            if add_cols.__contains__(x[0].upper().strip()):
+                continue
+            if partition_cols.__contains__(x[0].upper().strip()):
+                continue
+            if x[0].__contains__("#") or StringUtil.is_blank(x[0]):
+                continue
+            hive_mate_info = HiveFieldInfo(x[0].upper(),
+                                           x[1],x[2],x[3],x[4],x[5].strip())
+
+            hive_meta_info_list.append(hive_mate_info)
+            i = i+1
+
+        return hive_meta_info_list
+
+    @staticmethod
+    def get_table_comment(db_name, table_name):
+        desc_formmatted = HiveUtil.get_table_descformatted(db_name,
+                                                           table_name)
+        result = ""
+        for attr in desc_formmatted:
+            if attr[0].strip().upper().__eq__("COMMENT"):
+                result = attr[1].strip()
+
+        return result
+
 if __name__ == '__main__':
-    print HiveUtil.get_table_descformatted("default","hds___aaa_batch_init_input")
+    a = HiveUtil.get_table_desc("default","my_test")
+    for x in a :
+        print a.index(x)

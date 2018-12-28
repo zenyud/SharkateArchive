@@ -5,12 +5,16 @@
 # Function Desc : 归档入口
 # History       : 2018/12/21  ZENGYU     Create
 # Remarks       :
-import re
 
+
+from archive.create_table import ManageTable
 from archive.date_check import DateCheck
 from archive.init_archive import init
 from archive.archive_lock import ArchiveLock, MetaLock
+from archive.meta_data_service import MetaDataService
 from archive.org_check import OrgCheck
+from utils.biz_excpetion import BizException
+from utils.hive_utils import HiveUtil
 from utils.logger import Logger
 
 LOG = Logger()
@@ -25,6 +29,13 @@ class ArchiveData(object):
         self.__args = args
 
         self.__print_arguments()
+
+    @property
+    def common_dict(self):
+        common_dict = HiveUtil.get_common_dict()
+        if len(common_dict) == 0:
+            raise BizException("初始化公共代码失败！请检查数据库")
+        return common_dict
 
     def __print_arguments(self):
         """ 参数格式化输出
@@ -68,6 +79,8 @@ class ArchiveData(object):
         LOG.info("判断是否有在进行的任务,并加锁 ")
         ArchiveLock(self.__args.obj, self.__args.org).check()
 
+        LOG.info("初始化公共代码字典")
+        common_dict = self.common_dict
         LOG.info("日期分区字段检查 ")
         date_check = DateCheck(self.__args.dataDate, self.__args.dateRange,
                                self.__args.dbName, self.__args.tableName)
@@ -80,18 +93,40 @@ class ArchiveData(object):
         org_check.check()
 
         LOG.info("元数据处理、表并发处理")
-        meta_lock = MetaLock(self.__args.obj,self.__args.org)
+        meta_lock = MetaLock(self.__args.obj, self.__args.org)
         meta_lock.metalock()
 
         LOG.info("元数据登记与更新")
-        LOG.info("元数据解锁")
-        LOG.info("源表与Hive表比较")
-        LOG.info("创建Hive表或修改Hive表结构")
+        meta_service = MetaDataService()
+        meta_service.upload_meta_data(self.__args.schemaID,
+                                      self.__args.sourceDbName,
+                                      self.__args.sourceTableName,
+                                      self.__args.db_name,
+                                      self.__args.table_name,
+                                      self.__args.dataDate,
+                                      self.__args.bucketsNum
+                                      )
+
+        manage_table = ManageTable()
+        if not HiveUtil.exist_table(self.__args.db_name,
+                                    self.__args.table_name):
+            LOG.debug("创建归档表")
+            manage_table.create_table(self.__args.sourceDbName,
+                                      self.__args.sourceTableName,
+                                      self.__args.db_name,
+                                      self.__args.table_name,
+                                      self.__args.orgPos,
+                                      self.common_dict, self.__args.clusterCol,
+                                      self.__args.bucketsNum)
+
+        LOG.debug("根据表定义变化信息增加表字段 ")
+
         LOG.info("源数据的数据量统计")
         LOG.info("数据载入")
         LOG.info("统计入库条数")
         LOG.info("登记数据资产")
         LOG.info("解除并发锁")
+
 
 if __name__ == '__main__':
     # 初始化判断

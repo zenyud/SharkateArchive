@@ -17,6 +17,7 @@ from archive.model.base_model import *
 engine = create_engine("ibm_db_sa://db2inst1:111111@10.10.20.55:50000/skd")
 
 
+
 if __name__ == '__main__':
     Session = sessionmaker(bind=engine)
     session = Session()

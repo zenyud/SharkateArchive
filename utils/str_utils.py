@@ -22,4 +22,14 @@ class StringUtil(object):
         else:
             return False
 
+    @staticmethod
+    def eq_ignore(obj1, obj2 ):
+        """
+            忽视大小写的比较
+        :param obj1:
+        :param obj2:
+        :return:
+        """
+        return obj1.upper().strip().__eq__(obj2.upper().strip())
+
 

@@ -6,16 +6,6 @@
 # History       : 2018/12/21  ZENGYU     Create
 # Remarks       :
 import argparse
-import getopt
-
-import sys
-
-from utils.biz_excpetion import BizException
-
-init_title = ["org", "sourceDataMode", "sourceDbName", "sourceTableName",
-              "schemaIDdbName", "tableName",
-              "savaMode", "dataDate", "dateRange", "orgPos",
-              "clusterCol", "bucketsNum"]
 
 
 def init():
@@ -54,4 +44,4 @@ def init():
                              "且源数据为增量时传入），格式 dbname.tablename")
 
     args = parser.parse_args()
-    return  args
+    return args

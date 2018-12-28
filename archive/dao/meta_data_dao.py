@@ -19,6 +19,7 @@ class MetaColumnInfoDao(object):
     def get_meta_data_by_table(self, table_id):
         result = SESSION.query(DidpMetaColumnInfo).filter(
             DidpMetaColumnInfo.TABLE_ID == table_id).all()
+
         return result
 
     def add_meta_column(self, meta_field_info):
@@ -28,6 +29,21 @@ class MetaColumnInfoDao(object):
         :return:
         """
         SESSION.add(meta_field_info)
+        SESSION.commit()
+        SESSION.close()
+
+    def update_meta_column(self, table_id, col_name, update_dict):
+        """
+            更新字段
+        :param table_id: 表id
+        :param col_name: 字段名
+        :param update_dict: 更新字典
+        :return:
+        """
+        SESSION.query(DidpMetaColumnInfo).filter(
+            DidpMetaColumnInfo.TABLE_ID == table_id,
+            DidpMetaColumnInfo.COL_NAME == col_name).update(update_dict)
+
         SESSION.commit()
         SESSION.close()
 
@@ -48,6 +64,28 @@ class MetaTableInfoDao(object):
     """
      表元数据信息表
     """
+
+    def get_recent_meta_table_info(self, table_name, release_date):
+        """
+            获取最近的表元数据信息
+        :param table_name:
+        :param release_date:
+        :return: 最近一天的元数据信息
+        """
+        result = SESSION.query(DidpMetaTableInfo).filter(
+            DidpMetaTableInfo.TABLE_NAME == table_name,
+            DidpMetaTableInfo.RELEASE_DATE <= release_date).order_by(
+            DidpMetaTableInfo.RELEASE_DATE.desc()).all()
+
+        if len(result) == 0:
+            result = SESSION.query(DidpMetaTableInfo).filter(
+                DidpMetaTableInfo.TABLE_NAME == table_name,
+                DidpMetaTableInfo.RELEASE_DATE >= release_date).order_by(
+                DidpMetaTableInfo.RELEASE_DATE.asc()).all()
+        if len(result) > 0 :
+            return result[0]
+        else:
+            return null
 
     def add_meta_table_info(self, meta_table_info):
         """
@@ -131,17 +169,17 @@ class MetaTableInfoDao(object):
         SESSION.commit()
         SESSION.close()
 
-    def update_meta_table_info(self, table_name, release_date, bucket_num):
+    def update_meta_table_info(self, table_name, release_date, update_dict):
         """
             更新Meta_table_info
         :param table_name: 表名
         :param release_date: 发布日期
+        :param update_dict: 更新字典 {"user_id":1}
         :return:
         """
         meta_table_info = SESSION.query(DidpMetaTableInfo) \
             .filter_by(TABLE_NAME=table_name,
-                       RELEASE_DATE=release_date).first()
-        meta_table_info.BUCKET_NUM = bucket_num
+                       RELEASE_DATE=release_date).update(update_dict)
         SESSION.commit()
         SESSION.close()
 
@@ -152,7 +190,12 @@ class MetaTableInfoHisDao(object):
         SESSION.commit()
         SESSION.close()
 
-    pass
+    def get_meta_table_info_his(self, table_id, schema_id, data_date):
+        result = SESSION.query(DidpMetaTableInfoHis).filter(
+            DidpMetaTableInfoHis.TABLE_ID == table_id,
+            DidpMetaTableInfoHis.SCHEMA_ID == schema_id,
+            DidpMetaTableInfoHis.RELEASE_DATE == data_date).one()
+        return result
 
 
 if __name__ == '__main__':

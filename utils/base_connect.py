@@ -28,7 +28,12 @@ port = cf.get("db2", "port")
 dbName = cf.get("db2", "dbName")
 
 Base = declarative_base()
-
+LOG.debug("——————")
+LOG.debug("-----数据库连接信息----")
+LOG.debug("数据库用户    ：{0}".format(user))
+LOG.debug("密码         ：{0}".format(password))
+LOG.debug("数据库类型       ：{0}".format("db2"))
+LOG.debug("JDBC URL地址   ：{0}".format(db_url))
 
 def get_session():
     engine_str = "ibm_db_sa://{db_user}:{password}@{db_url}:" \
@@ -37,8 +42,7 @@ def get_session():
         db_url=db_url, port=port,
         dbName=dbName)
 
-    LOG.debug("——————")
-    LOG.debug("数据库连接信息："+engine_str)
+
     engine = create_engine(engine_str)
     Session = sessionmaker(bind=engine)
     session = Session()

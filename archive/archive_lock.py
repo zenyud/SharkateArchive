@@ -16,6 +16,7 @@ LOG = Logger()
 archive_lock_dao = ArchiveLockDao()
 meta_lock_dao = MetaLockDao()
 
+
 class ArchiveLock(object):
     def __init__(self, obj, org):
         self.__obj = obj
