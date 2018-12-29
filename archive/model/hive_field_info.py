@@ -9,7 +9,7 @@
 
 class HiveFieldInfo(object):
     """
-        Hive 表信息
+        Hive 表信息对象
     """
 
     def __init__(self, col_name, data_type, default_value, not_null, unique,

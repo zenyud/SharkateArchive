@@ -128,7 +128,14 @@ class HiveUtil(object):
     @staticmethod
     def execute(sql):
         db_oper.execute(sql)
-
+    @staticmethod
+    def execute_sql(sql):
+        """
+        有返回结果
+        :param self:
+        :return:
+        """
+        return db_oper.fetchall(sql)
     @staticmethod
     def get_common_dict():
         return CommonParamsDao().get_all_common_code()

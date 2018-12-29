@@ -34,18 +34,6 @@ class MetaDataService(object):
         元数据操作类
     """
 
-    # def __init__(self, schema_id, source_db_name, source_table_name, db_name,
-    #              table_name,
-    #              data_date, bucket_num, common_dict):
-    #     self.schema_id = schema_id
-    #     self.source_db_name = source_db_name
-    #     self.source_table_name = source_table_name
-    #     self.db_name = db_name
-    #     self.table_name = table_name
-    #     self.data_date = data_date
-    #     self.bucket_num = bucket_num
-    #     self.common_dict = common_dict
-
     def get_meta_field_info_list(self, table_name, data_date):
         """
             获取最近元数据字段信息
