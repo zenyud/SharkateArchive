@@ -26,11 +26,15 @@ class DateUtil(object):
         else:
             result = a + timedelta(n)
         return result.strftime("%Y%m%d")
+
     @staticmethod
     def get_now_date():
         dt = datetime.datetime.now()
-        return dt.strftime("%Y%m%d")
-    def get_month_start(self, now_day):
+        return dt.strftime("%Y%m%d %H:%M:%S")
+
+
+    @staticmethod
+    def get_month_start(now_day):
         """
         :param now_day: 当日日期String
         :return: 月初日期String
@@ -42,7 +46,8 @@ class DateUtil(object):
 
         return str(day_begin)
 
-    def get_month_end(self, now_day):
+    @staticmethod
+    def get_month_end(now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         month = d.month
@@ -50,18 +55,21 @@ class DateUtil(object):
         day_end = '%d%02d%02d' % (year, month, monthRange)
         return str(day_end)
 
-    def get_year_start(self, now_day):
+    @staticmethod
+    def get_year_start( now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         return str(year) + "0101"
 
-    def get_year_end(self, now_day):
+    @staticmethod
+    def get_year_end(now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         return str(year) + "1231"
         pass
 
-    def get_quarter_start(self, now_day):
+    @staticmethod
+    def get_quarter_start( now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         month = d.month
@@ -78,7 +86,8 @@ class DateUtil(object):
             jd_begin = str(year) + '1001'
         return jd_begin
 
-    def get_quarter_end(self, now_day):
+    @staticmethod
+    def get_quarter_end(now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         month = d.month
@@ -93,7 +102,8 @@ class DateUtil(object):
             jd_end = str(year) + '1231'
         return jd_end
 
-    def get_quarter(self, now_day):
+    @staticmethod
+    def get_quarter(now_day):
         d = datetime.datetime.strptime(now_day, "%Y%m%d")
         year = d.year
         month = d.month

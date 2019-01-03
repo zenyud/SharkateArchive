@@ -15,6 +15,7 @@ class StringUtil(object):
         :param input: 输入的字符串
         :return: true or false
         """
+        in_str = str(in_str)
         if in_str is None :
             return True
         elif in_str.strip().__len__()==0 :
@@ -30,6 +31,8 @@ class StringUtil(object):
         :param obj2:
         :return:
         """
+        obj1 = str(obj1)
+        obj2 = str(obj2)
         return obj1.upper().strip().__eq__(obj2.upper().strip())
 
 

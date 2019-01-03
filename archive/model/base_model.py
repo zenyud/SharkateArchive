@@ -90,8 +90,8 @@ class DidpMetaColumnInfo(Base):
 
 class DidpMetaColumnInfoHis(Base):
     __tablename__ = "DIDP_META_COLUMN_INFO_HIS"
-    TABLE_HIS_ID = Column(nullable=False, primary_key=True)
-    COLUMN_ID = Column(nullable=False)
+    TABLE_HIS_ID = Column(nullable=False)
+    COLUMN_ID = Column(nullable=False, primary_key=True)
     TABLE_ID = Column(nullable=False)
     PROJECT_VERSION_ID = Column(nullable=False)
     LAST_UPDATE_TIME = Column(nullable=False)
