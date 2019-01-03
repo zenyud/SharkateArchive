@@ -5,6 +5,8 @@
 # Function Desc :
 # History       : 2018/12/28  ZENGYU     Create
 # Remarks       :
+from archive.model.hive_field_info import MetaTypeInfo
+
 
 class FieldState(object):
     def __init__(self, field, full_seq, current_seq, ddl_type, hive_type,

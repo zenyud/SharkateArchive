@@ -25,7 +25,7 @@ class HiveFieldInfo(object):
         self.not_null = 0 if not_null == 'No' else 1
         self.unique = unique
         self.comment = comment
-        self.col_seq = col_seq
+        self.col_seq = col_seq    # 字段序号
 
     @property
     def col_length(self):

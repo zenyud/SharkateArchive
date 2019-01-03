@@ -35,6 +35,17 @@ class HdsStructControl(object):
         """
         HdsStructControl.archive_lock_dao.add(obj, org)
 
+
+    @staticmethod
+    def archive_unlock(obj, org):
+        """
+            归档任务解锁
+        :param obj:
+        :param org:
+        :return:
+        """
+        HdsStructControl.archive_lock_dao.delete_by_pk(obj, org)
+
     def meta_lock_find(self, obj, org):
         """
             元数据锁查找
@@ -61,5 +72,3 @@ class HdsStructControl(object):
                """
 
         self.meta_lock_dao.delete_by_pk(obj, org)
-
-

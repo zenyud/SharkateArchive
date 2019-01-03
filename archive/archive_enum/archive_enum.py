@@ -27,8 +27,7 @@ class OrgPos(enum.Enum):
 class PartitionKey(enum.Enum):
     DATE_SCOPE = "partition.key.date.scope"
     ORG = "partition.key.org"
-
-
+    GROUP="back_code"
 
 class DataArchiveConstance(enum.Enum):
     # 归档数据对象
@@ -84,7 +83,7 @@ class AddColumn(enum.Enum):
     CHAIN_SDATE = "add.column.sdate"
     # 拉链结束日期
     CHAIN_EDATE = "add.column.edate"
-
+    GROUP="back_code"
     # TEMP_TAIL = "hds___tail"
 
 class CommentChange(enum.Enum):
@@ -92,6 +91,7 @@ class CommentChange(enum.Enum):
     TABLE_COMMENT_CHANGE_DDL = "table.comment.change.ddl"
     # ddl字段备注改变是否需要增加新版本
     FIELD_COMMENT_CHANGE_DDL = "field.comment.change.ddl"
+    GROUP = "back_code"
 
 if __name__ == '__main__':
     for x in AddColumn:

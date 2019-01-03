@@ -63,11 +63,13 @@ class HiveUtil(object):
             DidpCommonParams.PARAM_NAME
             == PartitionKey.DATE_SCOPE.value).all()
 
-        pri_key = didp_params.PARAM_VALUE
-        # print  pri_key
+        pri_key = didp_params[0].PARAM_VALUE
+
         flag = False
         for col in result:
-            if str(col[0]).strip().upper().__eq__(pri_key.upper()):
+            print col[0]
+            if StringUtil.eq_ignore(col[0],pri_key):
+
                 flag = True
                 break
         return flag
@@ -86,12 +88,12 @@ class HiveUtil(object):
             DidpCommonParams.GROUP_NAME
             == PartitionKey.GROUP.value,
             DidpCommonParams.PARAM_NAME
-            == PartitionKey.ORG.value).all().PARAM_VALUE
+            == PartitionKey.ORG.value).one().PARAM_VALUE
         a_key = SESSION.query(DidpCommonParams).filter(
             DidpCommonParams.GROUP_NAME
             == AddColumn.GROUP.value,
             DidpCommonParams.PARAM_NAME
-            == AddColumn.COL_ORG.value).all().PARAM_VALUE
+            == AddColumn.COL_ORG.value).one().PARAM_VALUE
         # 机构字段位置（1-没有机构字段 2-字段在列中 3-字段在分区中）
         key = 1
         for col in result:
@@ -135,7 +137,7 @@ class HiveUtil(object):
         :param self:
         :return:
         """
-        return db_oper.fetchall(sql)
+        return db_oper.fetchall_direct(sql)
     @staticmethod
     def get_common_dict():
         return CommonParamsDao().get_all_common_code()
@@ -155,7 +157,9 @@ class HiveUtil(object):
         partition_cols = set()
         if filter :
             common_dict = HiveUtil.get_common_dict()
+            print "common_dict len :" + str(common_dict.__len__())
             for add_col in AddColumn:
+                print add_col.value
                 add_cols.add(common_dict.get(add_col.value).upper().strip())
             for part_col in PartitionKey:
                 partition_cols.add(common_dict.get(part_col.value).upper().strip)
@@ -170,7 +174,7 @@ class HiveUtil(object):
             if x[0].__contains__("#") or StringUtil.is_blank(x[0]):
                 continue
             hive_mate_info = HiveFieldInfo(x[0].upper(),
-                                           x[1],x[2],x[3],x[4],x[5].strip())
+                                           x[1],x[2],x[3],x[4],x[5].strip(),i)
 
             hive_meta_info_list.append(hive_mate_info)
             i = i+1
@@ -189,6 +193,5 @@ class HiveUtil(object):
         return result
 
 if __name__ == '__main__':
-    a = HiveUtil.get_table_desc("default","my_test")
-    for x in a :
-        print a.index(x)
+    a = HiveUtil.has_partition("default","test_archive")
+    print a
