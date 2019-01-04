@@ -104,28 +104,6 @@ class MetaTableInfoDao(object):
      表元数据信息表
     """
 
-    def get_recent_meta_table_info(self, table_name, release_date):
-        """
-            获取最近的表元数据信息
-        :param table_name:
-        :param release_date:
-        :return: 最近一天的元数据信息
-        """
-        result = SESSION.query(DidpMetaTableInfo).filter(
-            DidpMetaTableInfo.TABLE_NAME == table_name,
-            DidpMetaTableInfo.RELEASE_DATE <= release_date).order_by(
-            DidpMetaTableInfo.RELEASE_DATE.desc()).all()
-
-        if len(result) == 0:
-            result = SESSION.query(DidpMetaTableInfo).filter(
-                DidpMetaTableInfo.TABLE_NAME == table_name,
-                DidpMetaTableInfo.RELEASE_DATE >= release_date).order_by(
-                DidpMetaTableInfo.RELEASE_DATE.asc()).all()
-        if len(result) > 0:
-            return result[0]
-        else:
-            return null
-
     def add_meta_table_info(self, meta_table_info):
         """
 
@@ -195,6 +173,30 @@ class MetaTableInfoDao(object):
 
 
 class MetaTableInfoHisDao(object):
+
+    @staticmethod
+    def get_recent_table_info_his(table_name,release_date):
+        """
+                    获取最近的表元数据信息
+                :param table_name:
+                :param release_date:
+                :return: 最近一天的元数据信息
+                """
+        result = SESSION.query(DidpMetaTableInfoHis).filter(
+            DidpMetaTableInfoHis.TABLE_NAME == table_name,
+            DidpMetaTableInfoHis.RELEASE_DATE <= release_date).order_by(
+            DidpMetaTableInfoHis.RELEASE_DATE.desc()).all()
+
+        if len(result) == 0:
+            result = SESSION.query(DidpMetaTableInfo).filter(
+                DidpMetaTableInfo.TABLE_NAME == table_name,
+                DidpMetaTableInfo.RELEASE_DATE >= release_date).order_by(
+                DidpMetaTableInfo.RELEASE_DATE.asc()).all()
+        if len(result) > 0:
+            return result[0]
+        else:
+            return null
+
     @staticmethod
     def update_meta_table_info_his(table_his_id, update_dict):
         """

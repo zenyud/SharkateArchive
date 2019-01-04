@@ -10,12 +10,20 @@ from archive.archive_way import *
 def main():
     args = ArchiveData.archive_init()
     # 判断归档模式 执行不同的实现类
-
-    switch = {"1": AllArchive(), "2": AddArchive(), "4": ChainTransArchive(),
-              "5": LastAddArchive(), "6": LastAllArchive()}
-    print args.saveMode
-    archive = switch.get(args.saveMode)
-    archive.run()
+    archive = None
+    save_mode = args.saveMode
+    if save_mode== "1":
+        archive = AllArchive()
+    elif save_mode == "2":
+        archive = AddArchive()
+    elif save_mode == "4":
+        archive = ChainTransArchive()
+    elif save_mode == "5":
+        archive = LastAddArchive()
+    elif save_mode == "6" :
+        archive = LastAddArchive()
+    if archive:
+        archive.run()
 
 if __name__ == '__main__':
     main()

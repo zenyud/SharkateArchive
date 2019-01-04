@@ -133,7 +133,6 @@ class ArchiveData(object):
         parser.add_argument("-addTableName", required=False,
                             help="增量历史表名（当归档方式为历史全量，"
                                  "且源数据为增量时传入），格式 dbname.tablename")
-
         args = parser.parse_args()
         return args
 
@@ -199,8 +198,9 @@ class ArchiveData(object):
 
     def org_check(self):
         if HiveUtil.exist_table(self.__args.dbName, self.__args.tableName):
-            if int(self.__args.orgPos) != HiveUtil.get_org_pos(self.__args.dbName,
-                                                           self.__args.tableName):
+            if int(self.__args.orgPos) != HiveUtil.get_org_pos(
+                    self.__args.dbName,
+                    self.__args.tableName):
                 raise BizException("归档机构分区与hive表中不一致 !!!")
 
     def meta_lock(self):
@@ -278,17 +278,21 @@ class ArchiveData(object):
             for field in self.field_change_list:
                 # field type : class FieldState
                 if field.hive_no == -2:
+                    # hive 需要新增字段
                     change_detail_buffer = change_detail_buffer \
                                            + " `{field_name}`  {field_type},". \
-                                               format(field_name=field.field,
-                                                      field_type=field.type)
-
+                                               format(field_name=field.field_name,
+                                                      field_type=field.ddl_type.get_whole_type)
+                    LOG.debug("field length %s " % field.ddl_type.field_length)
+                    LOG.debug("whole_type %s " % field.ddl_type.get_whole_type)
         if len(change_detail_buffer) > 0:
             change_detail_buffer = change_detail_buffer[:-1]  # 去掉末尾的逗号
-            alter_sql = "alter table {db_name}.{table_name} add columns( {buffer} )".format(
+            alter_sql = "ALTER TABLE {db_name}.{table_name} ADD COLUMNS ({buffer}) ".format(
                 db_name=self.__args.dbName,
                 table_name=self.__args.tableName,
                 buffer=change_detail_buffer)
+
+            LOG.debug("sql 语句为 %s" % alter_sql)
             HiveUtil.execute(alter_sql)
         alter_sql2 = ""
         if self.field_type_change_list:
@@ -298,12 +302,15 @@ class ArchiveData(object):
                                           "change column `{column}` `{column}` {type} ". \
                     format(db_name=self.__args.dbName,
                            table_name=self.__args.tableName,
-                           column=field.field,
-                           type=field.type)
+                           column=field.field_name,
+                           type=field.ddl_type.get_whole_type)
+                LOG.debug("field length %s " % field.ddl_type.field_length)
                 if not StringUtil.is_blank(field.comment_ddl):
                     # 若备注不为空 则添加备注
                     alter_sql2 = alter_sql2 + " comment '{comment}' ".format(
                         comment=field.comment_ddl)
+
+                LOG.debug("修改表sql为：%s" % alter_sql2)
                 HiveUtil.execute(alter_sql2)
 
     def get_fields_rank_list(self, db_name, table_name, data_date):
@@ -332,26 +339,29 @@ class ArchiveData(object):
     def get_change_list(meta_field_infos, hive_field_infos):
         """
             获取所有字段
-        :param meta_field_infos: 原表
-        :param hive_field_infos: hive表
+        :param meta_field_infos: 接入表元数据
+        :param hive_field_infos: 现有的hive表
         :return:
         """
         hive_field_name_list = [field.col_name.upper() for field in
                                 hive_field_infos]
-        meta_field_name_list = [field.col_name.upper() for field in
+        meta_field_name_list = [x.col_name.upper() for x in
                                 meta_field_infos]
-
+        LOG.debug("Hive字段个数为：%s" % len(hive_field_name_list))
+        LOG.debug("接入数据字段个数为：%s" %len(meta_field_name_list) )
         # 进行对比0
         field_change_list = list()
         for hive_field in hive_field_infos:
             hive_no = hive_field.col_seq  # 字段序号
-            meta_current_no = -1
-            meta_index = -1
-            if meta_field_name_list.__contains__(hive_field.col_name.upper()):
+
+            if hive_field.col_name.upper() in meta_field_name_list:
                 meta_index = meta_field_name_list.index(
                     hive_field.col_name.upper())
                 meta_current_no = meta_field_infos[meta_index].col_seq
-                ddl_type = meta_field_infos[meta_index].data_type
+                ddl_type = MetaTypeInfo(
+                    meta_field_infos[meta_index].data_type,
+                    meta_field_infos[meta_index].col_length,
+                    meta_field_infos[meta_index].col_scale)
                 meta_comment = meta_field_infos[meta_index].comment
             else:
                 # 源数据中没有Hive的信息
@@ -359,23 +369,16 @@ class ArchiveData(object):
                 hive_no = -1  # Hive 中有,元数据没有的字段
                 ddl_type = None
                 meta_comment = None
-            hive_data_type = MetaTypeInfo(hive_field.data_type,
-                                          hive_field.col_length,
-                                          hive_field.col_scale)
-            if meta_index == -1:
-                # 元数据中没有Hive的字段
-                ddl_data_type = None
-            else:
-                ddl_data_type = MetaTypeInfo(
-                    meta_field_infos[meta_index].data_type,
-                    meta_field_infos[meta_index].col_length,
-                    meta_field_infos[meta_index].col_scale
-                )
+
+            hive_type = MetaTypeInfo(hive_field.data_type,
+                                     hive_field.col_length,
+                                     hive_field.col_scale)
+
             field_state = FieldState(hive_field.col_name.upper(),
                                      hive_field.col_seq,
                                      meta_current_no,
-                                     ddl_data_type,
-                                     hive_data_type,
+                                     ddl_type,
+                                     hive_type,
                                      hive_field.comment,
                                      meta_comment,
                                      hive_no)
@@ -383,9 +386,9 @@ class ArchiveData(object):
             field_change_list.append(field_state)
 
         for meta_field in meta_field_infos:
-            if not hive_field_name_list.__contains__(
-                    meta_field.col_name.upper()):
+            if meta_field.col_name.upper() not in hive_field_name_list:
                 # Hive 里不包含 元数据中的字段
+                LOG.debug("meta_field.col_length : %s " % meta_field.col_length)
                 ddl_data_type = MetaTypeInfo(meta_field.data_type,
                                              meta_field.col_length,
                                              meta_field.col_scale)
@@ -397,19 +400,28 @@ class ArchiveData(object):
                                          None,
                                          None,
                                          meta_field.comment,
-                                         -2
+                                         -2  # hive中需要新增
                                          )
 
                 field_change_list.append(field_state)
 
         change = False  # 判断是否有字段改变 False 无变化 True 有变化
         for field in field_change_list:
-            if field.hive_no < 0 or field.full_seq != field.current_seq:
+            if field.hive_no < 0 or StringUtil.eq_ignore(field.full_seq,
+                                                         field.current_seq):
                 change = True
         # 如果没有改变 则将field_change_list 置空
+
         if not change:
             field_change_list = None
-
+        for f in field_change_list:
+            LOG.info(
+                "filed 字段信息：filed_name:{field_name}|"
+                "ddl_type:{ddl_type}|hive_type:{hive_type}|hive_no:{hive_no}"
+                    .format(field_name=f.field_name,
+                            ddl_type=f.ddl_type,
+                            hive_type=f.hive_type,
+                            hive_no=f.hive_no))
         return field_change_list
 
     def check_column_modify(self):
@@ -423,37 +435,40 @@ class ArchiveData(object):
 
                 meta_type_hive = field.hive_type
                 meta_type_ddl = field.ddl_type
-                if meta_type_ddl is None or meta_type_ddl is None:
+                if not meta_type_hive or not meta_type_ddl:
                     # 新增字段 跳过
                     continue
                 if not meta_type_ddl.__eq__(meta_type_hive):
                     # 字段类型不同,判断有哪些不同
+                    LOG.debug("meta_type_ddl %s " % meta_type_ddl)
+                    LOG.debug("meta_type_hive %s " % meta_type_hive)
                     if StringUtil.eq_ignore(meta_type_ddl.field_type,
                                             meta_type_hive.field_type):
                         # 类型相同判断精度,允许decimal字段精度扩大
+
                         if meta_type_hive.field_length < meta_type_ddl.field_length \
                                 and meta_type_hive.field_scale < meta_type_ddl.field_scale:
                             LOG.debug(
                                 "字段{field_name}精度扩大 {hive_type} -->> {ddl_type} \n "
                                 "修改表字段精度为 {ddl_type} ".format(
                                     field_name=field.field_name,
-                                    hive_type=meta_type_hive.get_whole_type(),
-                                    ddl_type=meta_type_ddl.get_whole_type()))
+                                    hive_type=meta_type_hive.get_whole_type,
+                                    ddl_type=meta_type_ddl.get_whole_type))
                             change_fields.add(field)
                             continue
 
                         elif meta_type_hive.field_length >= meta_type_ddl.field_length \
                                 and meta_type_hive.field_scale < meta_type_ddl.field_scale:
 
-                            old_type = meta_type_ddl.get_whole_type()
+                            old_type = meta_type_ddl.get_whole_type
                             meta_type_ddl.field_length = meta_type_hive.field_length
                             LOG.debug(
                                 "字段{field_name}精度扩大 {hive_type} -->> {ddl_type1} \n "
                                 "修改表字段精度为 {ddl_type2}".format(
                                     field_name=field.field_name,
-                                    hive_type=meta_type_hive.get_whole_type(),
+                                    hive_type=meta_type_hive.get_whole_type,
                                     ddl_type1=old_type,
-                                    ddl_type2=meta_type_ddl.get_whole_type()
+                                    ddl_type2=meta_type_ddl.get_whole_type
                                 ))
                             continue
                         elif meta_type_hive.field_length < meta_type_ddl.field_length \
@@ -464,9 +479,9 @@ class ArchiveData(object):
                                 "字段{field_name}精度扩大 {hive_type} -->> {ddl_type1} \n "
                                 "修改表字段精度为 {ddl_type2}".format(
                                     field_name=field.field_name,
-                                    hive_type=meta_type_hive.get_whole_type(),
+                                    hive_type=meta_type_hive.get_whole_type,
                                     ddl_type1=old_type,
-                                    ddl_type2=meta_type_ddl.get_whole_type()
+                                    ddl_type2=meta_type_ddl.get_whole_type
                                 ))
                             continue
                         else:
@@ -604,21 +619,23 @@ class ArchiveData(object):
             self.args.tableName, self.args.dataDate)
         if self.field_change_list:
             # 如果字段有变化
-            for field in self.field_change_list.__iter__():
+            for field in self.field_change_list :
                 is_exists = False
                 for ddl_field in self.source_ddl:
-                    if StringUtil.eq_ignore(ddl_field.col_name, field.field):
+                    if StringUtil.eq_ignore(ddl_field.col_name, field.field_name):
                         is_exists = True
                         break
                 if is_exists:
+                    LOG.debug(field.field_name)
+                    LOG.debug(field.ddl_type)
                     if self.field_change_list.index(field) == 0:
-                        sql = sql + self.buidl_column(table_alias, field.field,
+                        sql = sql + self.build_column(table_alias, field.field_name,
                                                       field.ddl_type.field_type,
                                                       need_trim)
 
                     else:
-                        sql = sql + "," + self.buidl_column(table_alias,
-                                                            field.field,
+                        sql = sql + "," + self.build_column(table_alias,
+                                                            field.field_name,
                                                             field.ddl_type.field_type,
                                                             need_trim)
                 else:
@@ -627,11 +644,11 @@ class ArchiveData(object):
             # 无字段变化的情况
             for field in self.source_ddl:
                 if self.source_ddl.index(field) == 0:
-                    sql = sql + self.buidl_column(table_alias, field.col_name,
+                    sql = sql + self.build_column(table_alias, field.col_name,
                                                   field.data_type,
                                                   need_trim)
                 else:
-                    sql = sql + "," + self.buidl_column(table_alias,
+                    sql = sql + "," + self.build_column(table_alias,
                                                         field.col_name,
                                                         field.data_type,
                                                         need_trim)
@@ -639,7 +656,7 @@ class ArchiveData(object):
         return sql
 
     @staticmethod
-    def buidl_column(table_alias, col_name, col_type, need_trim):
+    def build_column(table_alias, col_name, col_type, need_trim):
         """
         :param table_alias:
         :param col_name:
@@ -676,6 +693,7 @@ class ArchiveData(object):
 
     def unlock(self):
         self.hds_struct_control.archive_unlock(self.__args.obj, self.__args.org)
+
     def run(self):
         """
         归档程序运行入口
@@ -683,19 +701,19 @@ class ArchiveData(object):
          1 - 成功 0 - 失败
         """
         LOG.info("判断是否有在进行的任务,并加锁 ")
-        # self.lock()
+        self.lock()
 
         LOG.info("初始化公共代码字典")
         self.init_common_dict()
 
         LOG.info("日期分区字段检查 ")
-        # self.data_partition_check()
+        self.data_partition_check()
 
         LOG.info("机构字段字段检查 ")
-        # self.org_check()
+        self.org_check()
 
         LOG.info("元数据处理、表并发处理")
-        # self.meta_lock()
+        self.meta_lock()
 
         LOG.info("元数据登记与更新")
         self.upload_meta_data()
@@ -721,7 +739,7 @@ class ArchiveData(object):
             LOG.info("数据载入")
             self.load_data()
             LOG.info("统计入库条数")
-            self.count_archive_data()
+            self.archive_count = self.count_archive_data()
             LOG.info("入库的条数为{0}".format(self.archive_count))
         else:
             LOG.debug("归档数据为空！ ")
@@ -745,7 +763,7 @@ class LastAddArchive(ArchiveData):
             db_name=self.args.dbName,
             table_name=self.args.tableName)
         r = HiveUtil.execute_sql(hql)
-        return int(r[0])
+        return int(r[0][0])
 
     def create_table(self):
         """
@@ -846,7 +864,7 @@ class LastAddArchive(ArchiveData):
 
         # 构造字段的sql
         hql = hql + self.build_load_column_sql("", True)
-        print hql
+        LOG.debug("构造的hql是{0}".format(hql))
         HiveUtil.execute(hql)
         self.archive_count = self.count_archive_data()
 

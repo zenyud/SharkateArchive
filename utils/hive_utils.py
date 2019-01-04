@@ -130,6 +130,7 @@ class HiveUtil(object):
     @staticmethod
     def execute(sql):
         db_oper.execute(sql)
+
     @staticmethod
     def execute_sql(sql):
         """
@@ -138,6 +139,7 @@ class HiveUtil(object):
         :return:
         """
         return db_oper.fetchall_direct(sql)
+
     @staticmethod
     def get_common_dict():
         return CommonParamsDao().get_all_common_code()
@@ -157,12 +159,15 @@ class HiveUtil(object):
         partition_cols = set()
         if filter :
             common_dict = HiveUtil.get_common_dict()
-            print "common_dict len :" + str(common_dict.__len__())
+
             for add_col in AddColumn:
-                print add_col.value
-                add_cols.add(common_dict.get(add_col.value).upper().strip())
+                v= common_dict.get(add_col.value)
+                if v :
+                    add_cols.add(v.upper().strip())
             for part_col in PartitionKey:
-                partition_cols.add(common_dict.get(part_col.value).upper().strip)
+                v = common_dict.get(part_col.value)
+                if v :
+                    partition_cols.add(v.upper().strip)
         i = 0
         hive_meta_info_list = list() # 字段信息列表
         # 迭代字段

@@ -36,24 +36,34 @@ class MetaDataService(object):
 
     @staticmethod
     def get_meta_field_info_list(table_name, data_date):
+        # type: (str, str) -> list(HiveFieldInfo)
         """
-            获取最近元数据字段信息
+            获取最近元数据字段信息 封装成Hive字段类型
         :param table_name:
         :param data_date:
         :return:
         """
-        meta_table_info = meta_table_info_dao.get_recent_meta_table_info(
+        meta_table_info = meta_table_info_his_dao.get_recent_table_info_his(
             table_name, data_date)
 
         if meta_table_info:
-            meta_column_info = meta_column_info_dao.get_meta_data_by_table(
-                meta_table_info.TABLE_ID)
+            meta_column_info_his = meta_column_info_his_dao.get_meta_column_info(
+                meta_table_info.TABLE_HIS_ID)
 
             # 转换成Hive_field_info 类型
             hive_field_infos = list()
-            for field in meta_column_info:
+            for field in meta_column_info_his:
+                # 拼接完整字段类型
+                full_type = field.COL_TYPE
+                if  field.COL_LENGTH and  field.COL_SCALE:
+                    full_type = full_type + "({col_len}.{col_scale})".format(
+                        col_len=field.COL_LENGTH,
+                        col_scale=field.COL_SCALE)
+                elif field.COL_LENGTH and not field.COL_SCALE  :
+                    full_type = full_type +"({col_len})".format(col_len=field.COL_LENGTH)
+
                 hive_field_info = HiveFieldInfo(field.COL_NAME,
-                                                field.COL_TYPE,
+                                                full_type,
                                                 field.COL_DEFAULT,
                                                 field.NULL_FLAG,
                                                 "No",
@@ -315,8 +325,10 @@ class MetaDataService(object):
                 LOG.debug("这次变化和前后都不同 ! ")
                 # 登记数元数据
                 table_id = meta_table_info_dao.get_meta_table_info(schema_id,
-                                                                   table_name)[0].TABLE_ID
-                meta_table_info_dao.delete_meta_table_info(schema_id,table_name)
+                                                                   table_name)[
+                    0].TABLE_ID
+                meta_table_info_dao.delete_meta_table_info(schema_id,
+                                                           table_name)
                 new_meta_table_info = DidpMetaTableInfo(
                     TABLE_ID=table_id,
                     SCHEMA_ID=schema_id,

@@ -15,48 +15,54 @@ class HiveFieldInfo(object):
     def __init__(self, col_name, data_type, default_value, not_null, unique,
                  comment, col_seq):
 
+        self.full_type = data_type
         self.col_name = col_name
         if "(" not in data_type:
             self.data_type = data_type
+
         else:
-            index = data_type.index("(")
-            self.data_type = data_type[:index]
+            index1 = data_type.index("(")
+            self.data_type = data_type[:index1]
         self.default_value = default_value
         self.not_null = 0 if not_null == 'No' else 1
         self.unique = unique
         self.comment = comment
-        self.col_seq = col_seq    # 字段序号
+        self.col_seq = col_seq  # 字段序号
+
+    def get_list(self):
+        if "(" in self.full_type and ")" in self.full_type:
+            index1 = self.full_type.index("(")
+            index2 = self.full_type.index(")")
+            list = self.full_type[index1 + 1:index2].split(",")
+            return list
+        else:
+            return None
 
     @property
     def col_length(self):
-        """
-            获取字段的长度
-        :return: 字段长度 int
-        """
-        if "(" in self.data_type and ")" in self.data_type:
-            index1 = self.data_type.index("(")
-            index2 = self.data_type.index(")")
-            s = self.data_type[index1 + 1, index2]
-            list = s.split(",")
-            return int(list[0])
+        list = self.get_list()
+        if list:
+            return list[0]
         else:
             return None
+            # return self.col_length
+
+    @col_length.setter
+    def col_length(self, v):
+        self.col_length = v
 
     @property
     def col_scale(self):
-        """
-            获取小数位数
-        :return: 小数位数
-        """
-        if "(" in self.data_type and ")" in self.data_type:
-            index1 = self.data_type.index("(")
-            index2 = self.data_type.index(")")
-            s = self.data_type[index1 + 1, index2]
-            list = s.split(",")
+        list = self.get_list()
+        if list:
             if len(list) == 2:
-                return int(list[1])
+                return list[1]
         else:
             return None
+
+    @col_scale.setter
+    def col_scale(self, v):
+        self.col_scale = v
 
     @property
     def col_name_quote(self):
@@ -91,19 +97,22 @@ class MetaTypeInfo(object):
         else:
             super(MetaTypeInfo, self).__eq__(obj)
 
+    @property
     def get_whole_type(self):
         types = ["DECIMAL", "DOUBLE", "FLOAT"]
         if self.field_length > 0:
             if self.filed_scale > 0:
-                return self.field_type + "(" + self.field_length + "," + self.filed_scale + ")"
+                return str(
+                    self.field_type + "(" + self.field_length + "," + self.filed_scale + ")")
             else:
                 if self.field_type in types:
-                    return self.field_type + "(" + self.field_length + "," + self.filed_scale + ")"
+                    return str(
+                        self.field_type + "(" + self.field_length + "," + self.filed_scale + ")")
                 else:
-                    return self.field_type + "(" + self.field_length + ")"
+                    return str(self.field_type + "(" + self.field_length + ")")
 
         else:
-            return self.field_type
+            return str(self.field_type)
 
     def set_whole_type(self, whole_type):
         """
@@ -124,3 +133,11 @@ class MetaTypeInfo(object):
                 self.field_length, self.filed_scale = [int(x) for x in list]
         else:
             self.field_type = whole_type
+
+
+if __name__ == '__main__':
+    a = HiveFieldInfo("a", "varchar(30)", "", "", "", "", 1)
+    a.col_scale = 1
+    print  a.data_type
+    print a.col_length
+    print  a.col_scale
