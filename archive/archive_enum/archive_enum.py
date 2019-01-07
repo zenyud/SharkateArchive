@@ -17,6 +17,15 @@ class DatePartitionRange(enum.Enum):
     QUARTER_YEAR = "Q"
     YEAR = "Y"
 
+
+class SourceDataMode(enum.Enum):
+    """
+        数据源模式
+    """
+    ALL = 1  # 全量
+    ADD = 2  # 增量
+
+
 class OrgPos(enum.Enum):
 
     NONE = 1

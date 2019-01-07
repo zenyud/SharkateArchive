@@ -11,9 +11,11 @@ import calendar
 
 
 class DateUtil(object):
+
     @classmethod
     def get_day_of_day(cls, dayof, n=0):
         '''''
+        获取给顶日期的 前N 天或后N 天数据
         if n>=0,date is larger than today
         if n<0,date is less than today
         date format = "YYYYMMDD"
@@ -118,4 +120,4 @@ class DateUtil(object):
         return quarter
 
 if __name__ == '__main__':
-    print DateUtil().get_now_date()
+   print DateUtil().get_day_of_day("20190107",-1)

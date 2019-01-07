@@ -21,7 +21,7 @@ def main():
     elif save_mode == "5":
         archive = LastAddArchive()
     elif save_mode == "6" :
-        archive = LastAddArchive()
+        archive = LastAllArchive()
     if archive:
         archive.run()
 

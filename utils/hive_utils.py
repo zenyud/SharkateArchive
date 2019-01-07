@@ -198,5 +198,4 @@ class HiveUtil(object):
         return result
 
 if __name__ == '__main__':
-    a = HiveUtil.has_partition("default","test_archive")
-    print a
+    pass
