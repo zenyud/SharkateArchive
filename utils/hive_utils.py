@@ -197,5 +197,39 @@ class HiveUtil(object):
 
         return result
 
+    @classmethod
+    def compare(cls, db_name1, table1, db_name2, table2,is_compare_comments):
+        meta1 = HiveUtil.get_hive_meta_field(db_name1,table1,False)
+        meta2 = HiveUtil.get_hive_meta_field(db_name2,table2,False)
+        if not meta1 and not meta2:
+            return True
+        elif meta1 is None or meta2 is None:
+            return False
+        elif len(meta1)!=len(meta2):
+            return False
+        for i in range(0,len(meta1)):
+            if not HiveUtil.compare_field(meta1[i],meta2[i],is_compare_comments):
+                return False
+
+        return True
+
+    @classmethod
+    def compare_field(cls, meta_info1, meta_info2, is_compare_comments):
+        if meta_info1.col_seq!= meta_info2.col_seq:
+            return False
+        if not StringUtil.eq_ignore(meta_info1.col_name, meta_info2.col_name):
+            return False
+        if not StringUtil.eq_ignore(meta_info1.data_type, meta_info2.data_type):
+            return False
+        if not StringUtil.eq_ignore(meta_info1.col_length,meta_info2.col_length):
+            return False
+        if not StringUtil.eq_ignore(meta_info1.col_scale,meta_info2.col_scale):
+            return False
+        if is_compare_comments:
+            if not StringUtil.eq_ignore(meta_info1.comment,meta_info2.comment):
+                return False
+        return True
+
+
 if __name__ == '__main__':
     pass

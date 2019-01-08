@@ -138,6 +138,4 @@ class MetaTypeInfo(object):
 if __name__ == '__main__':
     a = HiveFieldInfo("a", "varchar(30)", "", "", "", "", 1)
     a.col_scale = 1
-    print  a.data_type
-    print a.col_length
-    print  a.col_scale
+    print a.full_type

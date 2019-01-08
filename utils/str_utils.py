@@ -30,6 +30,10 @@ class StringUtil(object):
         :param obj2:
         :return:
         """
+        if obj1 is None and obj2 is None:
+            return True
+        if obj1 is None or obj2 is None:
+            return False
         obj1 = str(obj1)
         obj2 = str(obj2)
         return obj1.upper().strip().__eq__(obj2.upper().strip())
