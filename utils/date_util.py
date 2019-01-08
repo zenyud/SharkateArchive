@@ -34,6 +34,10 @@ class DateUtil(object):
         dt = datetime.datetime.now()
         return dt.strftime("%Y%m%d %H:%M:%S")
 
+    @staticmethod
+    def get_now_date_standy():
+        dt = datetime.datetime.now()
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
     def get_month_start(now_day):
@@ -120,4 +124,4 @@ class DateUtil(object):
         return quarter
 
 if __name__ == '__main__':
-   print DateUtil().get_day_of_day("20190107",-1)
+   print DateUtil().get_now_date_standy()

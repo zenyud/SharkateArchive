@@ -55,12 +55,13 @@ class MetaDataService(object):
             for field in meta_column_info_his:
                 # 拼接完整字段类型
                 full_type = field.COL_TYPE
-                if  field.COL_LENGTH and  field.COL_SCALE:
+                if field.COL_LENGTH and field.COL_SCALE:
                     full_type = full_type + "({col_len}.{col_scale})".format(
                         col_len=field.COL_LENGTH,
                         col_scale=field.COL_SCALE)
-                elif field.COL_LENGTH and not field.COL_SCALE  :
-                    full_type = full_type +"({col_len})".format(col_len=field.COL_LENGTH)
+                elif field.COL_LENGTH and not field.COL_SCALE:
+                    full_type = full_type + "({col_len})".format(
+                        col_len=field.COL_LENGTH)
 
                 hive_field_info = HiveFieldInfo(field.COL_NAME,
                                                 full_type,
@@ -406,6 +407,10 @@ class MetaDataService(object):
                 )
                 self.update_field_comment(source_field_info, after_column_info,
                                           field_comment_change_ddl)
+
+    @staticmethod
+    def get_meta_table( schema_id, table_name):
+        return meta_table_info_dao.get_meta_table_info(schema_id, table_name)
 
     @staticmethod
     def get_change_result(source_field_info, meta_field_info,

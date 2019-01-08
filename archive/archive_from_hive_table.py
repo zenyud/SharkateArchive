@@ -12,7 +12,7 @@ def main():
     # 判断归档模式 执行不同的实现类
     archive = None
     save_mode = args.saveMode
-    if save_mode== "1":
+    if save_mode == "1":
         archive = AllArchive()
     elif save_mode == "2":
         archive = AddArchive()
@@ -20,10 +20,11 @@ def main():
         archive = ChainTransArchive()
     elif save_mode == "5":
         archive = LastAddArchive()
-    elif save_mode == "6" :
+    elif save_mode == "6":
         archive = LastAllArchive()
     if archive:
         archive.run()
+
 
 if __name__ == '__main__':
     main()

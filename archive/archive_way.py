@@ -14,11 +14,13 @@ import re
 
 from archive.archive_enum.archive_enum import DatePartitionRange, AddColumn, \
     OrgPos, PartitionKey, SourceDataMode
+from archive.model.base_model import DidpMonRunLog
 
 from archive.model.field_state import FieldState
 from archive.model.hive_field_info import MetaTypeInfo
 from archive.service.hds_struct_control import HdsStructControl
 from archive.service.meta_data_service import MetaDataService
+from archive.service.mon_run_log_service import MonRunLogService
 from utils.biz_excpetion import BizException
 from utils.date_util import DateUtil
 from utils.hive_utils import HiveUtil
@@ -38,6 +40,7 @@ class ArchiveData(object):
     lock_stat = False  # 元数据锁
     hds_struct_control = HdsStructControl()
     meta_data_service = MetaDataService()
+    mon_run_log_service = MonRunLogService()
     common_dict = {}  # 公共代码字典
     data_scope = ""
     start_date = ""
@@ -48,6 +51,12 @@ class ArchiveData(object):
     source_count = 0  # 原始表数据量
     archive_count = 0  # 归档数据条数
     data_asset_infos = None  # 当日的数据资产列表
+    process_type = "5"
+    pro_start_date = None  # 流程开始时间
+    pro_end_date = None  # 流程结束时间
+    pro_status = "1"  # 加工状态
+    error_msg = ""  # 错误信息
+    is_already_load = False  # 是否已经归档完成
 
     def __init__(self):
         self.__args = self.archive_init()
@@ -164,6 +173,9 @@ class ArchiveData(object):
                             help="采集过滤SQL条件（WHERE 后面部分）")
         parser.add_argument("-filterCol", required=False, help="过滤字段")
         parser.add_argument("-schemaID", required=True, help="取连接信息")
+        parser.add_argument("-proID", required=True, help="流程ID")
+        parser.add_argument("-system", required=True, help="系统标识")
+        parser.add_argument("-batch", required=True, help="批次号")
         parser.add_argument("-dbName", required=True, help="归档库名")
         parser.add_argument("-tableName", required=True, help="归档表名")
         parser.add_argument("-saveMode", required=True,
@@ -776,20 +788,40 @@ class ArchiveData(object):
         pass
 
     @abc.abstractmethod
-    def register_archive(self):
-        pass
+    def register_run_log(self):
+        """
+            登记执行日志
+        :return:
+        """
+        didp_mon_run_log = DidpMonRunLog(PROCESS_ID=self.args.proID,
+                                         SYSTEM_KEY=self.args.system,
+                                         BRANCH_NO=self.args.org,
+                                         BIZ_DATE=self.args.dataDate,
+                                         BATCH_NO=self.args.batch,
+                                         TABLE_NAME=self.args.tableName,
+                                         DATA_OBJECT_NAME=self.args.obj,
+                                         PROCESS_TYPE=self.process_type, #加工类型
+                                         PROCESS_STARTTIME=self.pro_start_date,
+                                         PROCESS_ENDTIME=self.pro_end_date,
+                                         PROCESS_STATUS=self.pro_status,
+                                         INPUT_LINES=self.source_count,
+                                         OUTPUT_LINES=self.archive_count,
+                                         ERR_MESSAGE=self.error_msg
+                                         )
+        self.mon_run_log_service.create_run_log(didp_mon_run_log)
 
     def unlock(self):
         self.hds_struct_control.archive_unlock(self.__args.obj, self.__args.org)
 
-    def check_archive(self, start_date, end_date):
+    def check_run_log(self, start_date, end_date):
         """
-            根据时间段 判断数据资产
+            根据时间 判断是否有归档任务
         :return:
         """
-
-        if self.find_data_asset(start_date, end_date, True) and len(
-                self.find_data_asset(start_date, end_date, True)) > 0:
+        result = self.mon_run_log_service.find_run_logs(self.args.tableName,
+                                                        self.args.obj,
+                                                        start_date, end_date)
+        if result:
             return True
         else:
             return False
@@ -825,7 +857,9 @@ class ArchiveData(object):
         :return:
          1 - 成功 0 - 失败
         """
+
         LOG.info("------归档作业开始执行------")
+        self.pro_start_date = DateUtil.get_now_date_standy()  # 获取流程执行时间
         LOG.info("判断是否有在进行的任务,并加锁 ")
         self.lock()
 
@@ -862,32 +896,35 @@ class ArchiveData(object):
         if self.source_count > 0:
             # 原始数据不为空
             LOG.info("数据载入")
-            self.load_data()
+            try:
+                self.load_data()
+            except Exception as e:
+                LOG.exception(e.message)
+                self.error_msg = e.message
+                self.pro_status = "0"
             LOG.info("统计入库条数")
             self.archive_count = self.count_archive_data()
             LOG.info("入库的条数为{0}".format(self.archive_count))
+            self.pro_end_date = DateUtil.get_now_date_standy()
         else:
             LOG.debug("归档数据为空！ ")
-        LOG.info("删除已经存在的数据资产！")
-        self.delete_exists_archive()
-        LOG.info("登记数据资产")
-        self.register_archive()
+        # LOG.info("删除已经存在的数据资产！")
+        # self.delete_exists_archive()
+        LOG.info("登记执行日志")
+        self.register_run_log()
+        self.is_already_load = True
         LOG.info("解除并发锁")
         LOG.info("归档完成 ! ")
         self.unlock()
+        LOG.info("删除临时表")
+        self.clean()
 
     @abc.abstractmethod
     def init_ext(self):
         pass
 
-    def find_data_asset(self, start_date, end_date, type):
-        """
-            查找数据资产
-        :param start_date: 开始日期
-        :param end_date: 结束日期
-        :param type: 是否根据存储类型查询
-        :return:
-        """
+    @abc.abstractmethod
+    def clean(self):
         pass
 
 
@@ -896,8 +933,13 @@ class LastAddArchive(ArchiveData):
         最近增量归档
     """
 
-    def register_archive(self):
+    def clean(self):
+        super(LastAddArchive, self).clean()
+
         pass
+
+    def register_run_log(self):
+        super(LastAddArchive, self).register_run_log()
 
     def init_ext(self):
         if int(self.args.sourceDataMode) != SourceDataMode.ADD.value:
@@ -998,6 +1040,14 @@ class LastAllArchive(ArchiveData):
         最近一天全量
     """
 
+    def clean(self):
+        super(LastAllArchive, self).clean()
+        pass
+
+    def register_run_log(self):
+        super(LastAllArchive, self).register_run_log()
+        pass
+
     # pre_table = ""
     pk_list = None
 
@@ -1015,9 +1065,9 @@ class LastAllArchive(ArchiveData):
         pk_list = pk_list.split("|")
         self.pk_list = [pk.upper() for pk in pk_list]  # 保证主键全部大写
         # 判断前一天是否做过归档
-        if self.check_archive("00000101", self.args.dataDate):
-            if not self.check_archive(self.args.dataDate, self.args.dataDate):
-                if not self.check_archive(self.last_date, self.last_date):
+        if self.check_run_log("00000101", self.args.dataDate):
+            if not self.check_run_log(self.args.dataDate, self.args.dataDate):
+                if not self.check_run_log(self.last_date, self.last_date):
                     raise BizException("前一天没有做归档,不能做最近全量归档 ")
 
         if not StringUtil.eq_ignore(self.args.dateRange,
@@ -1025,11 +1075,12 @@ class LastAllArchive(ArchiveData):
             raise BizException(
                 "当日全量归档模式，不允许时间分区;当前时间分区为：{0}".format(self.args.dateRange))
 
-    def register_archive(self):
-        pass
-
     def count_archive_data(self):
-        pass
+        hql = "select count(1) from {db_name}.{table_name} ".format(
+            db_name=self.args.dbName,
+            table_name=self.args.tableName)
+        r = HiveUtil.execute_sql(hql)
+        return int(r[0][0])
 
     def create_table(self):
         col_date = self.common_dict.get(AddColumn.COL_DATE.value)
@@ -1164,6 +1215,25 @@ class LastAllArchive(ArchiveData):
 
 
 class AddArchive(ArchiveData):
+    all_table_name = None  # 全量历史表表名db_name.table_name
+    all_table_partition_range = None  # 全量历史表分区范围
+
+    def clean(self):
+        pass
+
+    def register_run_log(self):
+        super(AddArchive, self).register_run_log()
+        pass
+
+    def init_ext(self):
+        # 判断SourceDataMode
+        if int(self.args.sourceDataMode) == SourceDataMode.ALL.value:
+            # 需要获取All_table_name
+            if not self.args.allTableName:
+                raise BizException("全量数据求历史增量模式,需要传入全量历史表名！ ")
+
+        pass
+
     def count_archive_data(self):
         pass
 
@@ -1175,6 +1245,15 @@ class AddArchive(ArchiveData):
 
 
 class AllArchive(ArchiveData):
+    def clean(self):
+        pass
+
+    def register_run_log(self):
+        pass
+
+    def init_ext(self):
+        pass
+
     def count_archive_data(self):
         pass
 
@@ -1189,6 +1268,7 @@ class ChainTransArchive(ArchiveData):
     """
         拉链表归档按月、季度、年分区、不分区 允许出错重跑
     """
+
     # 是否封链
     is_close_chain = False
     # 闭链后下个分区值
@@ -1205,12 +1285,22 @@ class ChainTransArchive(ArchiveData):
         super(ChainTransArchive, self).__init__()
 
         self.data_mode = self.args.sourceDataMode
+        # 拉链表不做比较的字段
 
-    # 拉链表不做比较的字段
     @property
     def not_compare_column(self):
         not_compare_column = self.common_dict.get("chain.notcompare.column")
         return not_compare_column
+
+    def clean(self):
+        super(ChainTransArchive, self).clean()
+        if self.is_already_load:
+            if self.is_drop_tmp_table:
+                self.drop_table(self.temp_db, self.app_table_name1)
+        pass
+
+    def register_run_log(self):
+        super(ChainTransArchive, self).register_run_log()
 
     def init_ext(self):
         pk_list = self.args.pkList
@@ -1220,9 +1310,9 @@ class ChainTransArchive(ArchiveData):
                 table_name=self.args.tableName))
         self.pk_list = [pk.upper() for pk in pk_list.split("|")]
 
-        if self.check_archive("00000101", self.args.dataDate):
-            if not self.check_archive(self.args.dataDate, self.args.dataDate):
-                if not self.check_archive(self.last_date, self.last_date):
+        if self.check_run_log("00000101", self.args.dataDate):
+            if not self.check_run_log(self.args.dataDate, self.args.dataDate):
+                if not self.check_run_log(self.last_date, self.last_date):
                     raise BizException("前一天没有做归档,不能做最近全量归档 ")
         else:
             self.data_mode = SourceDataMode.ADD.value
@@ -1268,11 +1358,12 @@ class ChainTransArchive(ArchiveData):
         if not StringUtil.is_blank(self.not_compare_column):
             self.columns = self.not_compare_column.split(",")
 
-    def register_archive(self):
-        pass
-
     def count_archive_data(self):
-        pass
+        hql = "select count(1) from {db_name}.{table_name} ".format(
+            db_name=self.args.dbName,
+            table_name=self.args.tableName)
+        r = HiveUtil.execute_sql(hql)
+        return int(r[0][0])
 
     def create_table(self):
         hql = "CREATE TABLE IF NOT EXISTS {db_name}.{table_name} " \
@@ -1626,8 +1717,8 @@ class ChainTransArchive(ArchiveData):
                                                self.next_date_scope,
                                                self.args.org),
             data_date=self.args.dataDate,
-            chain_open_date=self.chain_open_date
-        )
+            chain_open_date=self.chain_open_date)
+
         if int(self.args.orgPos) == OrgPos.COLUMN.value:
             hql = hql + "'{0}',".format(self.args.org)
         hql = hql + self.build_load_column_sql(None, False) + \
